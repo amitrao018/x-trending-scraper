@@ -8,6 +8,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
 from sqlalchemy import create_engine, Column, String, DateTime
 from sqlalchemy.orm import sessionmaker, declarative_base
 
@@ -42,22 +43,21 @@ Base.metadata.create_all(bind=engine)
 def run_scraper():
 
     options = Options()
-    # Headless mode for Render deployment
-    options.add_argument("--headless=new")
+    #  Disable headless for debugging
+    # options.add_argument("--headless=new")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
 
-    # Use Render-installed Chrome & Chromedriver
-    chrome_path = "/usr/bin/google-chrome"
-    chromedriver_path = "/usr/bin/chromedriver"
-    options.binary_location = chrome_path
-    service = Service(chromedriver_path)
-
-    driver = webdriver.Chrome(service=service, options=options)
+    driver = webdriver.Chrome(
+        service=Service(ChromeDriverManager().install()),
+        options=options
+    )
 
     try:
+
         driver.get("https://x.com/login")
         time.sleep(3)
+
 
         username_field = driver.find_element(By.NAME, "text")
         username_field.send_keys(X_USERNAME)
@@ -69,8 +69,10 @@ def run_scraper():
         driver.find_element(By.XPATH, '//span[text()="Log in"]').click()
         time.sleep(7)
 
+
         driver.get("https://x.com/home")
         time.sleep(7)
+
 
         driver.save_screenshot("homepage.png")
         print("📸 Screenshot saved as homepage.png")
@@ -81,12 +83,16 @@ def run_scraper():
         for t in all_texts[:50]:
             print("-", t)
 
-        # Extract trending topics
-        elements = driver.find_elements(By.XPATH, "//section[@aria-label='Timeline: Trending now']//span")
+
+        elements = driver.find_elements(
+            By.XPATH, "//section[@aria-label='Timeline: Trending now']//span"
+        )
         trends = [el.text.strip() for el in elements if el.text.strip()]
 
         if not trends:
-            elements = driver.find_elements(By.XPATH, "//section[contains(., \"What’s happening\")]//span")
+            elements = driver.find_elements(
+                By.XPATH, "//section[contains(., \"What’s happening\")]//span"
+            )
             trends = [el.text.strip() for el in elements if el.text.strip()]
 
         clean_trends = []
@@ -114,6 +120,7 @@ def run_scraper():
             "trend5": top5[4] if len(top5) > 4 else None,
             "ip_address": ip
         }
+
 
         db = SessionLocal()
         db_run = Run(
