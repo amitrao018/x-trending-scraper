@@ -8,7 +8,6 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
 from sqlalchemy import create_engine, Column, String, DateTime
 from sqlalchemy.orm import sessionmaker, declarative_base
 
@@ -43,15 +42,13 @@ Base.metadata.create_all(bind=engine)
 def run_scraper():
 
     options = Options()
-    #  Disable headless for debugging
-    # options.add_argument("--headless=new")
+    options.add_argument("--headless=new")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
+    options.binary_location = "/usr/bin/google-chrome"
 
-    driver = webdriver.Chrome(
-        service=Service(ChromeDriverManager().install()),
-        options=options
-    )
+    service = Service("/usr/bin/chromedriver")
+    driver = webdriver.Chrome(service=service, options=options)
 
     try:
 
@@ -148,6 +145,7 @@ def run_scraper():
 
 if __name__ == "__main__":
     run_scraper()
+
 
 
 
