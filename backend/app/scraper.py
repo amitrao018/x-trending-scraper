@@ -42,19 +42,22 @@ Base.metadata.create_all(bind=engine)
 def run_scraper():
 
     options = Options()
+    # Headless mode for Render deployment
     options.add_argument("--headless=new")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
-    options.binary_location = "/usr/bin/google-chrome"
 
-    service = Service("/usr/bin/chromedriver")
+    # Use Render-installed Chrome & Chromedriver
+    chrome_path = "/usr/bin/google-chrome"
+    chromedriver_path = "/usr/bin/chromedriver"
+    options.binary_location = chrome_path
+    service = Service(chromedriver_path)
+
     driver = webdriver.Chrome(service=service, options=options)
 
     try:
-
         driver.get("https://x.com/login")
         time.sleep(3)
-
 
         username_field = driver.find_element(By.NAME, "text")
         username_field.send_keys(X_USERNAME)
@@ -66,10 +69,8 @@ def run_scraper():
         driver.find_element(By.XPATH, '//span[text()="Log in"]').click()
         time.sleep(7)
 
-
         driver.get("https://x.com/home")
         time.sleep(7)
-
 
         driver.save_screenshot("homepage.png")
         print("📸 Screenshot saved as homepage.png")
@@ -80,16 +81,12 @@ def run_scraper():
         for t in all_texts[:50]:
             print("-", t)
 
-
-        elements = driver.find_elements(
-            By.XPATH, "//section[@aria-label='Timeline: Trending now']//span"
-        )
+        # Extract trending topics
+        elements = driver.find_elements(By.XPATH, "//section[@aria-label='Timeline: Trending now']//span")
         trends = [el.text.strip() for el in elements if el.text.strip()]
 
         if not trends:
-            elements = driver.find_elements(
-                By.XPATH, "//section[contains(., \"What’s happening\")]//span"
-            )
+            elements = driver.find_elements(By.XPATH, "//section[contains(., \"What’s happening\")]//span")
             trends = [el.text.strip() for el in elements if el.text.strip()]
 
         clean_trends = []
@@ -118,7 +115,6 @@ def run_scraper():
             "ip_address": ip
         }
 
-
         db = SessionLocal()
         db_run = Run(
             trend1=result["trend1"],
@@ -145,6 +141,7 @@ def run_scraper():
 
 if __name__ == "__main__":
     run_scraper()
+
 
 
 
